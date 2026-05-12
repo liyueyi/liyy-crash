@@ -578,6 +578,10 @@ struct program_context {
 #define REDZONE             (0x100000ULL)
 #define VMWARE_VMSS_GUESTDUMP (0x200000ULL)
 #define GET_BUILD_ID (0x400000ULL)
+#ifdef MCP
+#define MCP_MODE    (0x800000ULL)
+#endif
+
 	char *cleanup;
 	char *namelist_orig;
 	char *namelist_debug_orig;
@@ -590,6 +594,10 @@ struct program_context {
 	FILE *error_fp;			/* error() message direction */
 	char *error_path;		/* stderr path information */
 };
+
+#ifdef MCP
+extern void mcp_server_loop(void);
+#endif
 
 #define READMEM  pc->readmem
 

@@ -124,6 +124,18 @@
   To build crash with this feature enabled, type "make valgrind" and then run
   crash with valgrind as "valgrind crash vmlinux vmcore".
 
+  crash supports the Model Context Protocol (MCP) server mode, which allows
+  external MCP clients to interact with crash via JSON-RPC over a Unix domain
+  socket.  MCP support is enabled by default; to disable it, type "make MCP=no".
+  When built with MCP support, crash can be started with the "--mcp" option to
+  enter MCP server mode.  A companion "crash-mcp-client" program is provided
+  to bridge stdio to the MCP server socket for use with MCP-compatible tools.
+  The default socket path is /tmp/crash.sock, which can be overridden with
+  the CRASH_MCP_SOCKET environment variable.
+
+  Example: Add crash as an MCP server in Claude CLI:
+    claude mcp add crash-mcp -- crash-mcp-client /tmp/crash.sock
+
   All of the alternate build commands above are "sticky" in that the
   special "make" targets only have to be entered one time; all subsequent
   builds will follow suit.

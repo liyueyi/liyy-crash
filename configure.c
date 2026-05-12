@@ -867,6 +867,19 @@ build_configure(struct supported_gdb_version *sp)
 	cflags = get_extra_flags("CFLAGS.extra", NULL);
 	gdb_conf_flags = get_extra_flags("GDBFLAGS.extra", gdb_conf_flags);
 
+	if (!cflags || !strstr(cflags, "-DMCP")) {
+		char *new_cflags;
+		if (cflags) {
+			new_cflags = malloc(strlen(cflags) + strlen(" -DMCP") + 1);
+			strcpy(new_cflags, cflags);
+			strcat(new_cflags, " -DMCP");
+			free(cflags);
+		} else {
+			new_cflags = strdup("-DMCP");
+		}
+		cflags = new_cflags;
+	}
+
 	makefile_setup(&fp1, &fp2);
 
 	while (fgets(buf, 512, fp1)) {
@@ -1871,6 +1884,7 @@ add_extra_lib(char *option)
 	int snappy, add_DSNAPPY, add_lsnappy;
 	int zstd, add_DZSTD, add_lzstd;
 	int valgrind, add_DVALGRIND;
+	int add_DMCP;
 	char *cflags, *ldflags;
 	FILE *fp_cflags, *fp_ldflags;
 	char *mode;
@@ -1880,6 +1894,7 @@ add_extra_lib(char *option)
 	snappy = add_DSNAPPY = add_lsnappy = 0;
 	zstd = add_DZSTD = add_lzstd = 0;
 	valgrind = add_DVALGRIND = 0;
+	add_DMCP = 0;
 
 	ldflags = get_extra_flags("LDFLAGS.extra", NULL);
 	cflags = get_extra_flags("CFLAGS.extra", NULL);
@@ -1914,6 +1929,11 @@ add_extra_lib(char *option)
 			add_DVALGRIND++;
 	}
 
+	if (strcmp(option, "mcp") == 0) {
+		if (!cflags || !strstr(cflags, "-DMCP"))
+			add_DMCP++;
+	}
+
 	if ((lzo || snappy || zstd) &&
 	    file_exists("diskdump.o") && (unlink("diskdump.o") < 0)) {
 		perror("diskdump.o");
@@ -1939,7 +1959,7 @@ add_extra_lib(char *option)
 		return;
 	}
 
-	if (add_DLZO || add_DSNAPPY || add_DZSTD || add_DVALGRIND) {
+	if (add_DLZO || add_DSNAPPY || add_DZSTD || add_DVALGRIND || add_DMCP) {
 		while (fgets(inbuf, 512, fp_cflags))
 			;
 		if (add_DLZO)
@@ -1950,6 +1970,8 @@ add_extra_lib(char *option)
 			fputs("-DZSTD\n", fp_cflags);
 		if (add_DVALGRIND)
 			fputs("-DVALGRIND\n", fp_cflags);
+		if (add_DMCP)
+			fputs("-DMCP\n", fp_cflags);
 	}
 
 	if (add_llzo2 || add_lsnappy || add_lzstd) {

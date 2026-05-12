@@ -75,6 +75,9 @@ static struct option long_options[] = {
 	{"hash", required_argument, 0, 0},
 	{"offline", required_argument, 0, 0},
 	{"src", required_argument, 0, 0},
+#ifdef MCP
+	{"mcp", no_argument, 0, 0},
+#endif
         {0, 0, 0, 0}
 };
 
@@ -311,6 +314,11 @@ main(int argc, char **argv)
 			else if (STREQ(long_options[option_index].name, "src"))
 				kt->source_tree = optarg;
 
+#ifdef MCP
+			else if (STREQ(long_options[option_index].name, "mcp"))
+				pc->flags2 |= MCP_MODE;
+#endif
+
 			else {
 				error(INFO, "internal error: option %s unhandled\n",
 					long_options[option_index].name);
@@ -428,6 +436,11 @@ main(int argc, char **argv)
 		}
 	}
 	opterr = 1;
+
+#ifdef MCP
+	if (pc->flags2 & MCP_MODE)
+		pc->flags |= SILENT;
+#endif
 
 	display_version();
 
@@ -744,6 +757,15 @@ main(int argc, char **argv)
 void
 main_loop(void)
 {
+#ifdef MCP
+	FILE *mcp_saved_fp;
+
+	if (pc->flags2 & MCP_MODE) {
+		mcp_saved_fp = fp;
+		fp = fopen("/dev/null", "w");
+	}
+#endif
+
 	if (pc->flags2 & ERASEINFO_DATA)
 		error(WARNING, "\n%s:\n         "
 		    "Kernel data has been erased from this dumpfile.  This may "
@@ -830,6 +852,13 @@ main_loop(void)
 
         pc->flags |= RUNTIME;
 
+#ifdef MCP
+	if (pc->flags2 & MCP_MODE) {
+		fclose(fp);
+		fp = mcp_saved_fp;
+	}
+#endif
+
 	if (pc->flags & PRELOAD_EXTENSIONS)
 		preload_extensions();
 
@@ -840,6 +869,13 @@ main_loop(void)
 	if (setjmp(pc->main_loop_env)) {
 		;
 	}
+
+#ifdef MCP
+	if (pc->flags2 & MCP_MODE) {
+		mcp_server_loop();
+		clean_exit(0);
+	}
+#endif
 
 	/*
 	 *  process_command_line() reads, parses and stores input command lines
